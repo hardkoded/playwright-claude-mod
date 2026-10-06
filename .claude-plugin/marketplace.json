@@ -1,0 +1,6 @@
+{
+  "name": "playwright-claude-mod",
+  "owner": { "name": "hardkoded" },
+  "description": "A Claude Code mod that shows Playwright tests and results in a side panel",
+  "plugins": [{ "name": "playwright-claude-mod", "source": "./" }]
+}

@@ -1,0 +1,8 @@
+# Written by Claude Code at each load
+.claude-plugin/types/
+
+# Local working notes
+tasks/
+
+.DS_Store
+node_modules/

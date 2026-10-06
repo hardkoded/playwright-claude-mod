@@ -1,0 +1,8 @@
+{
+  "name": "playwright-claude-mod",
+  "version": "0.1.0",
+  "description": "Playwright tests and results in a side panel",
+  "author": { "name": "hardkoded" },
+  "repository": "https://github.com/hardkoded/playwright-claude-mod",
+  "types": "./types/index.d.ts"
+}
