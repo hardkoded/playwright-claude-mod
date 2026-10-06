@@ -99,7 +99,7 @@ Ask Claude to run the tests, or type `/playwright`. The panel opens with the res
 
 - **Where the panel opens.** A pane that you did not open yourself needs a terminal at least 144 columns wide. If another pane is open, such as the diff panel, the Playwright pane opens as a tab behind it. In both cases the status line shows the result and tells you to open the Playwright tab or type `/playwright`. `/playwright` works at any width.
 - **Which config.** The mod finds the config in the panel's folder: the folder you gave `/playwright`, or else the folder the session runs in. Start Claude Code in your Playwright project, or open the panel with that folder.
-- **How it finds the report.** The mod searches the config text for `['json', { outputFile: '...' }]`. It does not find a reporter built in code or imported from another file.
+- **How it finds the report.** If the command sets `PLAYWRIGHT_JSON_OUTPUT_NAME` or `PLAYWRIGHT_JSON_OUTPUT_FILE`, the mod reads that file. If not, it searches the config text for `['json', { outputFile: '...' }]`. It does not find a reporter built in code or imported from another file.
 - **The html reporter can hang runs.** When a test fails, the html reporter starts a web server and waits. Claude's run then never ends. Set `['html', { open: 'never' }]` to stop that.
 - **Background runs.** A run that Claude starts in the background ends after the hook has checked, so the panel does not show it. Press Run all, or ask Claude to run the tests in the foreground.
 - **Large reports.** The mod cannot read a json report larger than 4 MiB.
