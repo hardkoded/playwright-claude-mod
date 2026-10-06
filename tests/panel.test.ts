@@ -180,3 +180,24 @@ test('a panel run that writes no new report keeps the old results', async ($, on
   expect(await ui.find({ type: 'Text', text: /○ 1 {2}total 1/ })).toBeDefined()
   await ui.unmount()
 })
+
+test('a run that names its json file reads that file, with no reporter in the config', async ($, on) => {
+  let mtime = 1
+  const reads: string[] = []
+  on('fs.stat', () => ({ value: { kind: 'file' as const, size: 1, mtimeMs: mtime++, isLink: false } }))
+  on('session.cwd', () => ({ value: '/proj' }))
+  on('fs.exists', (_$, e) => ({ value: e.path === '/proj/playwright.config.ts' }))
+  on('fs.read', (_$, e) => {
+    reads.push(e.path)
+    return { value: e.path === '/proj/playwright.config.ts' ? "export default { reporter: [['html'], ['list']] }" : report([spec('a', 'adds one', 'expected')]) }
+  })
+  on('tool.call', { tool: 'Bash' }, () => ({ result: { stdout: '1 passed', stderr: '', interrupted: false } }))
+
+  await $.tool.call({ tool: 'Bash', command: 'PLAYWRIGHT_JSON_OUTPUT_NAME=test-results/results.json npx playwright test --reporter=list,json 2>&1 | tail -80' })
+  expect(reads).toEqual(['/proj/test-results/results.json'])
+
+  const ui = await $.ui.mount({ plugin: 'playwright-claude-mod', surface: 'terminal', component: 'Pane', requestId: 'playwright', props: PANE })
+  expect(await ui.find({ type: 'Text', text: /Claude's run: 1 passed/ })).toBeDefined()
+  expect(await ui.find({ key: 'fix-reporter' })).toBeUndefined()
+  await ui.unmount()
+})

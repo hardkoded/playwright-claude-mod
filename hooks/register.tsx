@@ -14,6 +14,8 @@ const needsReporter = atom({ plugin: 'playwright-claude-mod', key: 'needsReporte
 const CONFIGS = ['ts', 'js', 'mts', 'mjs', 'cts', 'cjs'].map(ext => `playwright.config.${ext}`)
 // Matches `['json', { outputFile: 'results.json' }]` in the config's reporter list.
 const JSON_REPORTER = /\[\s*['"]json['"]\s*,\s*\{[^}]*outputFile\s*:\s*['"`]([^'"`]+)['"`]/
+// The json reporter's file, set for one run: `PLAYWRIGHT_JSON_OUTPUT_NAME=out.json npx playwright test`.
+const JSON_OUTPUT_ENV = /\bPLAYWRIGHT_JSON_OUTPUT_(?:NAME|FILE)=(['"]?)([^'"\s]+)\1/
 const HINT = "No json reporter with an outputFile. Add ['json', { outputFile: 'test-results/results.json' }] to reporter in the Playwright config."
 const FIX_PROMPT = (cwd: string) =>
   `Add a json reporter to the Playwright config in ${cwd}: ['json', { outputFile: 'test-results/results.json' }]. Keep the existing reporters.`
@@ -105,11 +107,12 @@ async function findReportFile($: EngineInterface, cwd: string): Promise<string |
   for (const name of CONFIGS) {
     if (!(await $.fs.exists(`${cwd}/${name}`))) continue
     const outputFile = JSON_REPORTER.exec(await $.fs.read(`${cwd}/${name}`))?.[1]
-    if (!outputFile) return undefined
-    return outputFile.startsWith('/') ? outputFile : `${cwd}/${outputFile.replace(/^\.\//, '')}`
+    return outputFile && absolute(cwd, outputFile)
   }
   return undefined
 }
+
+const absolute = (cwd: string, file: string) => (file.startsWith('/') ? file : `${cwd}/${file.replace(/^\.\//, '')}`)
 
 // With a json reporter configured, runs with the config's own reporters and reads its file;
 // without one, asks for JSON on stdout.
@@ -224,7 +227,10 @@ export const register: Register = on => {
   on('tool.call', { tool: 'Bash' }, async ($, e, next) => {
     // A background run returns before Playwright writes its report, so there is nothing to read yet.
     if (!PLAYWRIGHT_TEST.test(e.command) || /--list\b/.test(e.command) || e.run_in_background) return next(e)
-    const reportFile = await findReportFile($, await projectDir($))
+    const cwd = await projectDir($)
+    // A file the command names for its run wins over the config's.
+    const named = JSON_OUTPUT_ENV.exec(e.command)?.[2]
+    const reportFile = named ? absolute(cwd, named) : await findReportFile($, cwd)
     const before = reportFile && (await modifiedAt($, reportFile))
     const ran = await next(e)
     if (ran.deny !== undefined) return ran
